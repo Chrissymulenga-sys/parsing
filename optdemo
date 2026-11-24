@@ -1,0 +1,42 @@
+#!/bin/bash
+supported=abv
+found=""
+end_of_opts=0
+need_arg=0
+
+for arg in "$@"; do
+    if [ "$need_arg" -eq 1 ]; then
+        found="$found -o($arg)"
+        need_arg=0
+    elif [ "$end_of_opts" -eq 0 ] && [ "$arg" = "--" ]; then
+        end_of_opts=1
+    elif [ "$end_of_opts" -eq 0 ] && [[ $arg == -?* ]]; then
+        letters=${arg#-}
+        for (( i=0; i<${#letters}; i++ )); do
+            ch=${letters:i:1}
+            if [ "$ch" = "o" ]; then
+                rest=${letters:i+1}
+                if [ -n "$rest" ]; then
+                    found="$found -o($rest)"
+                else
+                    need_arg=1
+                fi
+                break
+            elif [[ $supported == *$ch* ]]; then
+                found="$found -$ch"
+            else
+                echo "Error: unsupported option: -$ch (in '$arg')" >&2
+                exit 1
+            fi
+        done
+    else
+        echo "Argument: $arg"
+    fi
+done
+
+if [ "$need_arg" -eq 1 ]; then
+    echo "Error: option -o requires an argument" >&2
+    exit 1
+fi
+echo "Options:$found"
+
